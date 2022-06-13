@@ -1,19 +1,8 @@
 #    This file is part of the CompressorQueue distribution.
 #    Copyright (c) 2021 Danish_00
-#
-#    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, version 3.
-#
-#    This program is distributed in the hope that it will be useful, but
-#    WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-#    General Public License for more details.
-#
-# License can be found in <
-# https://github.com/1Danish-00/CompressorQueue/blob/main/License> .
+#    Script Improved by Zylern
 
-
+import time
 from .FastTelethon import download_file, upload_file
 from .funcn import *
 from .config import *
@@ -26,19 +15,20 @@ async def stats(e):
         out, dl, id = wh.split(";")
         ot = hbs(int(Path(out).stat().st_size))
         ov = hbs(int(Path(dl).stat().st_size))
-        ans = f"Downloaded:\n{ov}\n\nCompressing:\n{ot}"
+        processing_file_name = dl.replace(f"downloads/", "").replace(f"_", " ")
+        ans = f"Processing Media:\n{processing_file_name}\n\nDownloaded:\n{ov}\n\nCompressed:\n{ot}"
         await e.answer(ans, cache_time=0, alert=True)
     except Exception as er:
         LOGS.info(er)
         await e.answer(
-            "Someting Went Wrong.\nSend Media Again.😕💔", cache_time=0, alert=True
+            "Someting Went Wrong.\nSend Media Again.", cache_time=0, alert=True
         )
 
 
 async def dl_link(event):
     if not event.is_private:
         return
-    if str(event.sender_id) not in OWNER:
+    if str(event.sender_id) not in OWNER and event.sender_id !=DEV:
         return
     link, name = "", ""
     try:
@@ -50,10 +40,10 @@ async def dl_link(event):
         return
     if WORKING or QUEUE:
         QUEUE.update({link: name})
-        return await event.reply(f"**✅ Added {link} in QUEUE😙❤️**")
+        return await event.reply(f"**✅ Added {link} in QUEUE**")
     WORKING.append(1)
     s = dt.now()
-    xxx = await event.reply("**Downloading...😙❤️**")
+    xxx = await event.reply("**📥 Downloading...**")
     try:
         dl = await fast_download(xxx, link, name)
     except Exception as er:
@@ -63,22 +53,22 @@ async def dl_link(event):
     es = dt.now()
     kk = dl.split("/")[-1]
     aa = kk.split(".")[-1]
+    newFile = dl.replace(f"downloads/", "").replace(f"_", " ")
     rr = "encode"
-    bb = kk.replace(f".{aa}", " [HEVC].mkv")
+    bb = kk.replace(f".{aa}", ".mkv")
     out = f"{rr}/{bb}"
     thum = "thumb.jpg"
     dtime = ts(int((es - s).seconds) * 1000)
     hehe = f"{out};{dl};0"
     wah = code(hehe)
     nn = await xxx.edit(
-        "**Compressing...😙❤️**",
+        "**🗜 Compressing...**",
         buttons=[
             [Button.inline("STATS", data=f"stats{wah}")],
             [Button.inline("CANCEL", data=f"skip{wah}")],
         ],
     )
-    ffmpegcode.append("-preset fast -c:v libx265 -s 854x480 -x265-params 'bframes=8:psy-rd=1:ref=3:aq-mode=3:aq-strength=0.8:deblock=1,1' -pix_fmt yuv420p -crf 29 -c:a libopus -b:a 32k -c:s copy -map 0 -ac 2  -ab 32k  -vbr 2 -level 3.1")
-    cmd = f"""ffmpeg -i '{dl}' {ffmpegcode[0]} '{out}' -y"""
+    cmd = f"""ffmpeg -i "{dl}" {ffmpegcode[0]} "{out}" -y"""
     process = await asyncio.create_subprocess_shell(
         cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
     )
@@ -95,19 +85,16 @@ async def dl_link(event):
     ees = dt.now()
     ttt = time.time()
     await nn.delete()
-    nnn = await xxx.client.send_message(xxx.chat_id, "**Uploading...😙❤️**")
+    nnn = await xxx.client.send_message(xxx.chat_id, "**📤 Uploading...**")
     with open(out, "rb") as f:
         ok = await upload_file(
             client=xxx.client,
             file=f,
             name=out,
             progress_callback=lambda d, t: asyncio.get_event_loop().create_task(
-                progress(d, t, nnn, ttt, "**Uploading...😙❤️**")
+                progress(d, t, nnn, ttt, "**📤 Uploading...**")
             ),
         )
-    ds = await xxx.client.send_file(
-        xxx.chat_id, file=ok, force_document=True, thumb=thum
-    )
     await nnn.delete()
     org = int(Path(dl).stat().st_size)
     com = int(Path(out).stat().st_size)
@@ -116,19 +103,16 @@ async def dl_link(event):
     eees = dt.now()
     x = dtime
     xx = ts(int((ees - es).seconds) * 1000)
-    xxx = ts(int((eees - ees).seconds) * 1000)
+    xxxx = ts(int((eees - ees).seconds) * 1000)
     a1 = await info(dl, xxx)
     a2 = await info(out, xxx)
-    dk = await ds.reply(
-        f"**●Original File Size :** {hbs(org)}\n**●Compressed File Size :** {hbs(com)}\n**●Compressed File Percentage :** {per}\n\n**●Get Mediainfo here :** [Before]({a1})/[After]({a2})\n\n●Downloaded in : {x}\n●Compressed in : {xx}\n●Uploaded in : {xxx}\n\nDone #compress #480p",
-        link_preview=False,
+    dk = f"<b>File Name:</b> {newFile}\n\n<b>Original File Size:</b> {hbs(org)}\n<b>Encoded File Size:</b> {hbs(com)}\n<b>Encoded Percentage:</b> {per}\n\n<b>Get Mediainfo Here:</b> <a href='{a1}'>Before</a>/<a href='{a2}'>After</a>\n\n<i>Downloaded in {x}\nEncoded in {xx}\nUploaded in {xxxx}</i>"
+    ds = await event.client.send_file(
+        event.chat_id, file=ok, caption=dk, force_document=True, link_preview=False, thumb=thum, parse_mode="html"
     )
     os.remove(dl)
     os.remove(out)
     WORKING.clear()
-
-
-
 
 
 async def encod(event):
@@ -137,7 +121,7 @@ async def encod(event):
             return
         event.sender
         if str(event.sender_id) not in OWNER and event.sender_id !=DEV:
-            return await event.reply("**Sorry You're not An Authorised User!😕💔**")
+            return await event.reply("**Sorry You're not An Authorised User!**")
         if not event.media:
             return
         if hasattr(event.media, "document"):
@@ -147,31 +131,25 @@ async def encod(event):
                 return
         else:
             return
-        try:
-            oc = event.fwd_from.from_id.user_id
-            occ = (await event.client.get_me()).id
-            if oc == occ:
-                return await event.reply("**This Video is already Compressed.😕💔**")
-        except BaseException:
-            pass
         if WORKING or QUEUE:
-            xxx = await event.reply("**Adding To Queue...😙❤️**")
+            time.sleep(2)
+            xxx = await event.reply("**Adding To Queue...**")
             # id = pack_bot_file_id(event.media)
             doc = event.media.document
             if doc.id in list(QUEUE.keys()):
-                return await xxx.edit("**This File is Already Added in Queue😕💔**")
+                return await xxx.edit("**This File is Already Added in Queue**")
             name = event.file.name
             if not name:
                 name = "video_" + dt.now().isoformat("_", "seconds") + ".mp4"
             QUEUE.update({doc.id: [name, doc]})
             return await xxx.edit(
-                "**Added This File in Queue😙❤️**"
+                "**Added This File in Queue**"
             )
         WORKING.append(1)
-        xxx = await event.reply("**Downloading...😙❤️**")
+        xxx = await event.reply("**📥 Downloading...**")
         s = dt.now()
         ttt = time.time()
-        dir = f"encode/"
+        dir = f"downloads/"
         try:
             if hasattr(event.media, "document"):
                 file = event.media.document
@@ -190,7 +168,7 @@ async def encod(event):
                                 t,
                                 xxx,
                                 ttt,
-                                "**Downloading...😙❤️**",
+                                f"**📥 Downloading**\n__{filename}__",
                             )
                         ),
                     )
@@ -199,7 +177,7 @@ async def encod(event):
                     event.media,
                     dir,
                     progress_callback=lambda d, t: asyncio.get_event_loop().create_task(
-                        progress(d, t, xxx, ttt, "**Downloading...😙❤️**")
+                        progress(d, t, xxx, ttt, f"**📥 Downloading**\n__{filename}__")
                     ),
                 )
         except Exception as er:
@@ -210,7 +188,8 @@ async def encod(event):
         kk = dl.split("/")[-1]
         aa = kk.split(".")[-1]
         rr = f"encode"
-        bb = kk.replace(f".{aa}", " [HEVC].mkv")
+        bb = kk.replace(f".{aa}", ".mkv")
+        newFile = dl.replace(f"downloads/", "").replace(f"_", " ")
         out = f"{rr}/{bb}"
         thum = "thumb.jpg"
         dtime = ts(int((es - s).seconds) * 1000)
@@ -218,14 +197,13 @@ async def encod(event):
         hehe = f"{out};{dl};0"
         wah = code(hehe)
         nn = await e.edit(
-            "**Compressing...😙❤️**",
+            "**🗜 Compressing...**",
             buttons=[
                 [Button.inline("STATS", data=f"stats{wah}")],
                 [Button.inline("CANCEL", data=f"skip{wah}")],
             ],
         )
-        ffmpegcode.append("-preset fast -c:v libx265 -s 854x480 -x265-params 'bframes=8:psy-rd=1:ref=3:aq-mode=3:aq-strength=0.8:deblock=1,1' -pix_fmt yuv420p -crf 29 -c:a libopus -b:a 32k -c:s copy -map 0 -ac 2  -ab 32k  -vbr 2 -level 3.1")
-        cmd = f"""ffmpeg -i '{dl}' {ffmpegcode[0]} '{out}' -y"""
+        cmd = f"""ffmpeg -i "{dl}" {ffmpegcode[0]} "{out}" -y"""
         process = await asyncio.create_subprocess_shell(
             cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
         )
@@ -242,19 +220,16 @@ async def encod(event):
         ees = dt.now()
         ttt = time.time()
         await nn.delete()
-        nnn = await e.client.send_message(e.chat_id, "**Uploading...😙❤️**")
+        nnn = await e.client.send_message(e.chat_id, "**📤 Uploading...**")
         with open(out, "rb") as f:
             ok = await upload_file(
                 client=e.client,
                 file=f,
                 name=out,
                 progress_callback=lambda d, t: asyncio.get_event_loop().create_task(
-                    progress(d, t, nnn, ttt, "**Uploading...😙❤️**")
+                    progress(d, t, nnn, ttt, f"**📤 Uploading**\n__{out.replace(f'encode/', '')}__")
                 ),
             )
-        ds = await e.client.send_file(
-            e.chat_id, file=ok, force_document=True, thumb=thum
-        )
         await nnn.delete()
         org = int(Path(dl).stat().st_size)
         com = int(Path(out).stat().st_size)
@@ -266,9 +241,9 @@ async def encod(event):
         xxx = ts(int((eees - ees).seconds) * 1000)
         a1 = await info(dl, e)
         a2 = await info(out, e)
-        dk = await ds.reply(
-            f"**●Original File Size :** {hbs(org)}\n**●Compressed File Size :** {hbs(com)}\n**●Compressed File Percentage :** {per}\n\n**●Get Mediainfo here :** [Before]({a1})/[After]({a2})\n\n●Downloaded in : {x}\n●Compressed in : {xx}\n●Uploaded in : {xxx}\n\nDone #compress #480p",
-            link_preview=False,
+        dk = f"<b>File Name:</b> {newFile}\n\n<b>Original File Size:</b> {hbs(org)}\n<b>Encoded File Size:</b> {hbs(com)}\n<b>Encoded Percentage:</b> {per}\n\n<b>Get Mediainfo Here:</b> <a href='{a1}'>Before</a>/<a href='{a2}'>After</a>\n\n<i>Downloaded in {x}\nEncoded in {xx}\nUploaded in {xxx}</i>"
+        ds = await e.client.send_file(
+            e.chat_id, file=ok, force_document=True, caption=dk, link_preview=False, thumb=thum, parse_mode="html"
         )
         os.remove(dl)
         os.remove(out)
