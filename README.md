@@ -23,15 +23,4 @@ A Telegram Bot To Encode Videos Using FFMPEG.
 ## Commands
 Add in [@BotFather](https://t.me/BotFather)
 
-    start - Check Bot is Working or not
-    setcode - Set Custom FFMPEG Code
-    help - Get Detailed Help
-    ping - Check Ping
-    sysinfo - Get System Info
-    leech - Leech Links And Compress Video
-    renew - Clear Cached Downloads, Queue etc
-    clear - Clear Queued Files
-    speed - Do A SpeedTest
-    eval - Execute An Argument
-    bash - Run Bash Commands
-    cmds - List Available Commands
+    
